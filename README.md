@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/app_logo.png" alt="Logo" style="display:block;width:800px;margin-bottom:.2rem;">
+  <img src="/assets/images/logo.png" alt="Logo" style="display:block;width:800px;margin-bottom:.2rem;">
 </div>
 
 <div style="padding:.8rem;">
