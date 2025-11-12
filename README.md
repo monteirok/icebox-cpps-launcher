@@ -9,6 +9,8 @@
     Icebox Launcher is a lightweight Electron wrapper and CPPS launcher/manager with a polished in‑app toolbar, customizable hotkeys, and macOS universal builds.
   </p>
 
+---
+
   <h3 style="margin-bottom:.4rem;color:#ffc70f;letter-spacing:0.08rem;">🚀 Features</h3>
   <ul>
     <li>Saved links as cards with name + host, auto‑fetched favicon, and dynamic background color derived from the favicon for readable contrast.</li>
