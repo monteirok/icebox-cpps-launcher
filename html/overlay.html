@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root { --bar-h: 56px; --dd-max: 360px; }
+      html, body { margin: 0; padding: 0; background: transparent; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+      .bar { height: var(--bar-h); width: 100vw; display: grid; grid-template-columns: 1fr; align-items: center; box-sizing: border-box; padding: 8px 12px; -webkit-app-region: drag; background: linear-gradient(180deg, #1e222b, #171b23); border-bottom: 1px solid rgba(255,255,255,.12); box-shadow: 0 10px 26px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06); }
+      .inner { position: relative; height: 36px; width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; }
+      .left, .right { display: grid; grid-auto-flow: column; gap: 10px; align-items: center; }
+      .left { padding-left: 80px; }
+      .grp { -webkit-app-region: no-drag; display: inline-grid; grid-auto-flow: column; gap: 6px; align-items: center; padding: 0; }
+      .btn { -webkit-app-region: no-drag; height: 28px; display: inline-grid; place-items: center; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.06); color: #e5e7eb; font: 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: default; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+      .btn:hover { filter: brightness(1.05); }
+      .dd { position: absolute; top: calc(var(--bar-h) - 4px); min-width: 280px; max-height: var(--dd-max); overflow: auto; background: rgba(20,24,33,.85); border: 1px solid rgba(255,255,255,.12); outline: 1px solid rgba(255,255,255,.06); border-radius: 12px; box-shadow: none; padding: 8px; display: none; backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); }
+      .dd.visible { display: block; }
+      .section { padding: 6px 8px; font: 11px/1 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: #93a1b5; }
+      .item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; color: #e5e7eb; cursor: default; }
+      .item:hover { background: rgba(255,255,255,.06); }
+    </style>
+  </head>
+  <body>
+    <div class="bar" id="bar">
+      <div class="inner">
+        <div class="left">
+          <div class="grp">
+            <button class="btn" id="linksBtn">Links ▾</button>
+            <div class="dd" id="ddLinks" style="left: 80px"></div>
+          </div>
+          <div class="grp">
+            <button class="btn" id="viewBtn">View ▾</button>
+            <div class="dd" id="ddView" style="left: 180px"></div>
+          </div>
+          <div class="grp">
+            <button class="btn" id="toolsBtn">Tools ▾</button>
+            <div class="dd" id="ddTools" style="left: 260px"></div>
+          </div>
+        </div>
+        <div></div>
+        <div class="right">
+          <div class="grp">
+            <button class="btn" id="helpBtn">Help ▾</button>
+            <div class="dd" id="ddHelp" style="right: 12px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const qs = (s)=>document.querySelector(s);
+      const dds = ['#ddLinks','#ddView','#ddTools','#ddHelp'].map(qs);
+      function barH(){ return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bar-h'))||56; }
+      function ddMax(){ return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--dd-max'))||360; }
+      function hideAll(){ dds.forEach(dd=>dd && dd.classList.remove('visible')); try { if (window.overlay && window.overlay.setHeight) window.overlay.setHeight(barH()); } catch{} }
+      function toggle(dd){ if (!dd) return; const v = dd.classList.contains('visible'); hideAll(); if (!v) { dd.classList.add('visible'); try { const h = Math.min(dd.scrollHeight + 12, ddMax()); window.overlay.setHeight(barH() + h); } catch {} } }
+      document.addEventListener('click', ()=> hideAll());
+      function bind(btnSel, ddSel){ const b=qs(btnSel), d=qs(ddSel); if (b && d) b.addEventListener('click', (e)=>{ e.stopPropagation(); toggle(d); }); }
+      [['#linksBtn','#ddLinks'],['#viewBtn','#ddView'],['#toolsBtn','#ddTools'],['#helpBtn','#ddHelp']].forEach(([b,d])=> bind(b,d));
+      function ddItem(label, meta, onClick){ const el=document.createElement('div'); el.className='item'; el.innerHTML = `<div>${label}</div><div style="color:#9aa0ad;font-size:12px;">${meta||''}</div>`; el.addEventListener('click', (e)=>{ e.stopPropagation(); hideAll(); try{ onClick&&onClick(); }catch{} }); return el; }
+      function getLinks(){ try{ const raw = localStorage.getItem('savedLinks'); const arr = raw?JSON.parse(raw):[]; return Array.isArray(arr)?arr:[]; } catch { return []; } }
+      function renderLinks(){ const dd=qs('#ddLinks'); if(!dd) return; dd.innerHTML=''; const list=getLinks(); const pinned=list.filter(l=>l.pinned); const rest=list.filter(l=>!l.pinned);
+        if(pinned.length){ const s=document.createElement('div'); s.className='section'; s.textContent='Pinned'; dd.appendChild(s); pinned.forEach(l=> dd.appendChild(ddItem(l.name || (new URL(l.url).hostname.replace(/^www\\./,'')),'', ()=> window.overlay.open(l.url)))); }
+        if(rest.length){ const s2=document.createElement('div'); s2.className='section'; s2.textContent='Saved'; dd.appendChild(s2); rest.forEach(l=> dd.appendChild(ddItem(l.name || (new URL(l.url).hostname.replace(/^www\\./,'')),'', ()=> window.overlay.open(l.url)))); }
+        if(!list.length){ dd.appendChild(ddItem('No saved links','', ()=>{})); }
+      }
+      function renderView(){ const dd=qs('#ddView'); if(!dd) return; dd.innerHTML=''; dd.appendChild(ddItem('Return to Menu','Esc', ()=> window.overlay.home())); dd.appendChild(ddItem('Toggle Fullscreen','F11', ()=>{ try{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); }catch{} })); }
+      function renderTools(){ const dd=qs('#ddTools'); if(!dd) return; dd.innerHTML=''; dd.appendChild(ddItem('Clear Saved Links','', ()=>{ try{ localStorage.removeItem('savedLinks'); }catch{} })); dd.appendChild(ddItem('Toggle DevTools','F12', ()=>{ try{ window.overlay && window.overlay.devtools && window.overlay.devtools(); }catch{} })); }
+      function renderHelp(){ const dd=qs('#ddHelp'); if(!dd) return; dd.innerHTML=''; dd.appendChild(ddItem('About Icebox','', ()=> alert('Icebox – CPPS launcher'))); }
+      function renderAll(){ renderLinks(); renderView(); renderTools(); renderHelp(); try { if (window.overlay && window.overlay.setHeight) window.overlay.setHeight(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bar-h'))||56); } catch{} }
+      renderAll();
+      // Keep padding to the right of traffic lights on macOS
+      try { window.overlay.onConfig && window.overlay.onConfig((cfg)=>{ try {
+        if (cfg && typeof cfg.paddingLeft === 'number') { document.querySelector('.left').style.paddingLeft = cfg.paddingLeft + 'px'; }
+        if (cfg && typeof cfg.height === 'number') { document.documentElement.style.setProperty('--bar-h', cfg.height + 'px'); }
+      } catch {} }); } catch {}
+    </script>
+  </body>
+  </html>

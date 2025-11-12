@@ -1,0 +1,38 @@
+{
+  "name": "icebox-cpps-launcher-app",
+  "version": "1.0.0",
+  "description": "Icebox Launcher is a lightweight Electron wrapper and launcher/manager for all your favourite CPPS servers with a polished in-app toolbar, customizable hotkeys, and universal macOS builds (with support for other OS coming soon).",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "mac": "node -e \"const v=require('./package.json').version; console.log('\\x1b[1m\\x1b[43m\\x1b[30m 🛠️ BUILDING icebox_v'+v+'-macos_universal... ==========' + '\\x1b[0m')\" && electron-builder --mac --universal",
+    "link": ""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "electron": "^39.1.2",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.example.icebox",
+    "productName": "Icebox Launcher",
+    "mac": {
+      "category": "public.app-category.games",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "identity": null
+    }
+  }
+}

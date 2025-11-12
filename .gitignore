@@ -1,0 +1,13 @@
+# Node modules and caches
+node_modules/
+.npm-cache/
+
+# Build output
+dist/
+
+# Editor and environment settings
+.vscode/
+
+# macOS system files
+.DS_Store
+Icon?

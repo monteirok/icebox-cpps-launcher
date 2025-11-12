@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open or Save Links</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0b0f;
+        --glass-bg: rgba(18, 20, 28, 0.55);
+        --glass-border: rgba(255,255,255,.10);
+        --glass-outline: rgba(255,255,255,.05);
+        --glass-highlight: rgba(255,255,255,.06);
+        --focus: #3b82f6;
+      }
+      html, body {
+        height: 100%; margin: 0;
+        background-color: var(--bg);
+        /* Use project background image for main menu
+           Note: prompt.html lives in html/, while assets/ is a sibling
+           directory. The correct relative path is ../assets/... */
+        background-image: url('../assets/images/bg.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        color: #fff;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+      .wrap { min-height: 100%; display: grid; place-items: center; padding: 24px;}
+      .panel {
+        position: relative;
+        width: min(880px, 100%);
+        display: grid; gap: 16px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(14px) saturate(160%);
+        -webkit-backdrop-filter: blur(14px) saturate(160%);
+        border: 1px solid var(--glass-border);
+        outline: 1px solid var(--glass-outline);
+        border-radius: 20px; padding: 22px;
+        box-shadow: 0 18px 50px rgba(0,0,0,.5), inset 0 1px 0 var(--glass-highlight);
+        overflow: hidden;
+      }
+      .panel::before {
+        content: ""; position: absolute; inset: -30% -30% auto -30%; height: 50%;
+        background: radial-gradient(120% 60% at 10% 0%, rgba(255,255,255,.08), transparent 60%);
+        pointer-events: none; mix-blend-mode: screen;
+      }
+      h1 { margin: 0 0 6px; font-size: 18px; font-weight: 700; letter-spacing: .2px; }
+      p { margin: 0 0 10px; color: #a3a3ad; font-size: 13px; }
+      form { display: grid; gap: 12px; }
+      .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      .row-compact { display: grid; grid-template-columns: auto auto; gap: 12px; align-items: center; justify-content: start; }
+      label { display: grid; gap: 6px; font-size: 12px; color: #b1b1bb; }
+      input[type="url"], input[type="text"], input[type="color"] {
+        -webkit-appearance: none; appearance: none; width: 100%; padding: 12px; border-radius: 12px;
+        border: 1px solid var(--glass-border); background: rgba(18,20,28,.72); color: #fff;
+        font-size: 14px; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+        box-sizing: border-box; box-shadow: inset 0 1px 0 var(--glass-highlight);
+      }
+      input[type="color"] { padding: 0; width: 56px; height: 40px; }
+      input:focus { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(59,130,246,.25); }
+      button { padding: 12px 16px; border: 0; border-radius: 12px; background: linear-gradient(180deg, #3b82f6, #2563eb); color: #fff; font-weight: 700; cursor: pointer; box-shadow: 0 8px 26px rgba(59,130,246,.35); }
+      button.secondary { background: #2b2f3a; box-shadow: none; }
+
+      /* White/Blue Gradient Club Penguin Button */
+      .white-blue-btn {
+        --edge: #22a4f3;
+        --top: #d7f1ff;
+        --bottom: #7fbde1;
+        --text: #0154a3;
+        border-radius: 14px; position: relative; overflow: hidden;
+        border: 2px solid var(--edge);
+        background: linear-gradient(180deg, var(--top) 0%, var(--bottom) 100%);
+        color: var(--text);
+        font-weight: 800;
+        letter-spacing: .2px;
+        box-shadow: inset 0 -2px 0 rgba(34,164,243,.35), 0 4px 14px rgba(1,84,163,.25);
+        transition: transform .06s ease, box-shadow .12s ease, filter .12s ease;
+      }
+      .white-blue-btn:hover { filter: brightness(1.02); box-shadow: inset 0 -2px 0 rgba(34,164,243,.4), 0 6px 18px rgba(1,84,163,.28); }
+      .white-blue-btn:active { transform: translateY(1px); box-shadow: inset 0 -1px 0 rgba(34,164,243,.35), 0 3px 10px rgba(1,84,163,.2); }
+      /* Optional yellow/orange variant */
+      .white-blue-btn.warn { --edge: #ffc900; --top: #fff; --bottom: #ffe79a; --text: #d78204; }
+      .danger-btn { --edge: #e04646; --top: #ff9f9f; --bottom: #c53030; --text: #ffffff; }
+      .cpl-proceed {
+        --top: #22a4f3; --bottom: #0154a3; --edge: #0b59b0; --text: #ffffff;
+        border-radius: 14px; position: relative; overflow: hidden;
+        border: 2px solid var(--edge);
+        background: linear-gradient(180deg, var(--top) 0%, var(--bottom) 100%);
+        color: var(--text);
+        font-weight: 800;
+        box-shadow: inset 0 -2px 0 rgba(11,89,176,.4), 0 6px 18px rgba(1,84,163,.35);
+      }
+      .error { color: #f87171; font-size: 13px; min-height: 1.2em; }
+      .section-title {
+        margin: 4px 0 12px;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: #c7cbd6;
+        opacity: .9;
+      }
+      .grid { display: grid; grid-template-columns: repeat( auto-fit, minmax(220px, 1fr) ); gap: 14px; }
+      .card { position: relative; display: grid; grid-template-rows: auto 1fr; gap: 10px; height: 118px; border-radius: 18px; border: 1px solid var(--glass-border); background: rgba(19,22,32,.7); overflow: hidden; cursor: pointer; box-shadow: 0 14px 40px rgba(0,0,0,.45); transform: translateZ(0); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+      .card:hover { transform: translateY(-2px); box-shadow: 0 18px 44px rgba(0,0,0,.5); border-color: rgba(255,255,255,.12); }
+      .card .ink { position: absolute; inset: 0; opacity: .95; }
+      .card .chrome { position: absolute; inset: 0; background: radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,.06), transparent 60%), linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.25)); mix-blend-mode: screen; pointer-events: none; }
+      .card-body { position: relative; display: grid; grid-auto-flow: column; align-items: center; gap: 12px; padding: 16px; z-index: 1; }
+      .icon { width: 48px; height: 48px; border-radius: 14px; background: rgba(255,255,255,.12); display: grid; place-items: center; font-size: 22px; overflow: hidden; box-shadow: inset 0 1px 0 var(--glass-highlight); }
+      .icon img { width: 28px; height: 28px; object-fit: contain; display: block; pointer-events: none; }
+      .icon .fallback { display: none; }
+      .texts { display: grid; gap: 2px; }
+      .name { font-size: 16px; font-weight: 800; letter-spacing: .2px; text-shadow: 0 1px 1px rgba(0,0,0,.35); }
+      .meta { font-size: 12px; color: rgba(255,255,255,.8); opacity: .9; }
+      .muted { color: #9ca3af; font-size: 13px; }
+      .more { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 10px; align-items: center; }
+      select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #2a2d36; background: #12141a; color: #fff; font-size: 14px; outline: none; }
+
+      /* Card actions */
+      .card-actions { position: absolute; bottom: 10px; right: 10px; display: grid; grid-auto-flow: column; gap: 10px; z-index: 2; opacity: 0; transform: translateY(4px); transition: opacity .15s ease, transform .15s ease; }
+      .card:hover .card-actions { opacity: 1; transform: translateY(0); }
+      /* Icon buttons restyled to match legacy buttons */
+      .icon-btn {
+        width: 40px; height: 40px; border-radius: 14px;
+        display: inline-flex; align-items: center; justify-content: center; position: relative;
+        border: 2px solid #22a4f3; color: #0154a3; cursor: pointer; line-height: 0; padding: 0;
+        background: linear-gradient(180deg, #ffffff 0%, #cfeaff 100%);
+        box-shadow: inset 0 -2px 0 rgba(34,164,243,.35), 0 4px 14px rgba(1,84,163,.25);
+        transition: transform .06s ease, box-shadow .12s ease, filter .12s ease;
+      }
+      .icon-btn:hover { filter: brightness(1.02); box-shadow: inset 0 -2px 0 rgba(34,164,243,.4), 0 6px 18px rgba(1,84,163,.28); }
+      .icon-btn:active { transform: translateY(1px); box-shadow: inset 0 -1px 0 rgba(34,164,243,.35), 0 3px 10px rgba(1,84,163,.2); }
+      .icon-btn svg { width: 18px; height: 18px; display: block; pointer-events: none; }
+      /* Edit button matches Save button (gradient) */
+      .icon-btn.edit-btn {
+        border-color: #22a4f3; color: #0154a3;
+        background: linear-gradient(180deg, #ffffff 0%, #bcd9ea 100%);
+        box-shadow: inset 0 -2px 0 rgba(34,164,243,.35), 0 4px 14px rgba(1,84,163,.25);
+      }
+      /* Warning style for delete (yellow/orange from palette) */
+      .icon-btn.delete-btn { border-color: #b00b0b; color: #ffffff; background: linear-gradient(180deg, #f32222 0%, #a30101 100%); }
+      .icon-btn.pin-btn {
+                          background: transparent; border: none; box-shadow: none;
+                          color: #ffffff; transition: transform .06s ease, box-shadow .12s ease, filter .12s ease; }
+      .icon-btn.pin-btn svg { width: 22px; height: 22px; transition: transform .18s ease, filter .18s ease; }
+      .icon-btn.pin-btn::after { display: none; }
+      .icon-btn.pin-btn:hover { filter: none; box-shadow: none; }
+      .icon-btn.pin-btn:hover svg { transform: rotate(-12deg) scale(1.06); }
+      .icon-btn.pin-btn.active { color: #ffc900; box-shadow: none; }
+
+      /* Drag and drop */
+      .card.dragging { opacity: .6; filter: saturate(.8); }
+      .card.drop-target { outline: 2px dashed rgba(255,255,255,.25); }
+
+      /* Modal */
+      .modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 50; }
+      .modal[hidden] { display: none; }
+      .dialog { position: relative; width: min(560px, 92vw); background: rgba(17,20,28,.78); border: 1px solid var(--glass-border); outline: 1px solid var(--glass-outline); border-radius: 18px; padding: 16px; box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 1px 0 var(--glass-highlight); }
+      .dialog::before { content: ""; position: absolute; inset: -20% -20% auto -20%; height: 50%; background: radial-gradient(120% 60% at 10% 0%, rgba(255,255,255,.06), transparent 60%); pointer-events: none; mix-blend-mode: screen; }
+      .dialog h2 { margin: 0 0 10px; font-size: 16px; font-weight: 800; }
+      .dialog .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .dialog .row-compact { grid-template-columns: repeat(2, minmax(88px, 120px)); }
+      .dialog .actions { display: grid; grid-auto-flow: column; gap: 10px; justify-content: end; margin-top: 12px; }
+      .link-preview { margin-top: 6px; font-size: 12px; color: #a3a3ad; }
+
+      /* ------------------------ */
+      /* Fun, simple animations   */
+      /* ------------------------ */
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes popIn {
+        from { opacity: 0; transform: scale(.96); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes ripple {
+        from { opacity: .25; transform: scale(.2); }
+        to { opacity: 0; transform: scale(1.8); }
+      }
+      /* Panels/cards appear smoothly */
+      .panel { animation: fadeUp .25s ease-out; }
+      .card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease; }
+      .card:hover { transform: translateY(-3px) scale(1.01); }
+
+      /* Buttons pop slightly on hover / press */
+      .white-blue-btn,
+      .legacy-btn,
+      .cpl-proceed,
+      .icon-btn { transition: transform .12s ease, box-shadow .18s ease, filter .18s ease; }
+      .white-blue-btn:hover,
+      .legacy-btn:hover,
+      .cpl-proceed:hover,
+      .icon-btn:hover { transform: translateY(-1px) scale(1.02); }
+      .white-blue-btn:active,
+      .legacy-btn:active,
+      .cpl-proceed:active,
+      .icon-btn:active { transform: translateY(0) scale(.98); }
+
+      /* Subtle ripple on press for filled buttons */
+      .white-blue-btn::after,
+      .legacy-btn::after,
+      .cpl-proceed::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; }
+      .white-blue-btn:active::after,
+      .legacy-btn:active::after,
+      .cpl-proceed:active::after { animation: ripple .35s ease-out forwards; background: radial-gradient(closest-side, rgba(255,255,255,.35), rgba(255,255,255,0)); }
+
+      /* Modal dialog pop-in */
+      .modal:not([hidden]) .dialog { animation: popIn .2s ease-out; }
+
+      /* Reduce motion support */
+      @media (prefers-reduced-motion: reduce) {
+        .panel, .card, .white-blue-btn, .legacy-btn, .cpl-proceed, .icon-btn, .modal:not([hidden]) .dialog { animation: none !important; transition: none !important; }
+      }
+    </style>
+  </head>
+  
+  <body>
+    <!-- Affinity-like Top Navbar -->
+    <style>
+      :root { --tb-h: 56px; }
+      .topbar { position: fixed; inset: 0 0 auto 0; height: var(--tb-h); z-index: 1000; -webkit-app-region: drag;
+        background: linear-gradient(180deg, #1e222b, #171b23);
+        border-bottom: 1px solid rgba(255,255,255,.08);
+        box-shadow: 0 12px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+      }
+      .tb-inner { height: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 8px 12px; box-sizing: border-box; }
+      .tb-left, .tb-center, .tb-right { display: grid; grid-auto-flow: column; gap: 10px; align-items: center; }
+      .tb-left { padding-left: 80px; } /* room for traffic lights on macOS */
+      .tb-group { -webkit-app-region: no-drag; display: inline-grid; grid-auto-flow: column; gap: 6px; align-items: center; padding: 0; }
+      .tb-btn { -webkit-app-region: no-drag; height: 28px; display: inline-grid; place-items: center; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.06); color: #e5e7eb; font: 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: default; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+      .tb-btn:hover { filter: brightness(1.05); }
+      .tb-split { width: 1px; height: 20px; background: rgba(255,255,255,.10); margin: 0 2px; }
+      .dd { position: absolute; top: calc(var(--tb-h) - 4px); min-width: 260px; max-height: 56vh; overflow: auto; background: rgba(20,24,33,.85); border: 1px solid rgba(255,255,255,.12); outline: 1px solid rgba(255,255,255,.06); border-radius: 12px; box-shadow: none; padding: 8px; display: none; backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); }
+      .dd.visible { display: block; }
+      .dd .section { padding: 6px 8px; font: 11px/1 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: #93a1b5; }
+      .dd .item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; color: #e5e7eb; cursor: default; }
+      .dd .item:hover { background: rgba(255,255,255,.06); }
+    </style>
+    <div class="topbar" id="topbar">
+      <div class="tb-inner">
+        <div class="tb-left">
+          <div class="tb-group">
+            <button class="tb-btn" id="tbLinksBtn">Links ▾</button>
+            <div class="dd" id="ddLinks" style="left: 80px"></div>
+          </div>
+          <div class="tb-group">
+            <button class="tb-btn" id="tbViewBtn">View ▾</button>
+            <div class="dd" id="ddView" style="left: 180px"></div>
+          </div>
+          <div class="tb-group">
+            <button class="tb-btn" id="tbToolsBtn">Tools ▾</button>
+            <div class="dd" id="ddTools" style="left: 260px"></div>
+          </div>
+        </div>
+        <div class="tb-center"></div>
+        <div class="tb-right">
+          <div class="tb-group">
+            <button class="tb-btn" id="tbHelpBtn">Help ▾</button>
+            <div class="dd" id="ddHelp" style="right: 12px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap" style="padding-top: calc(var(--tb-h) + 12px);">
+      <div class="panel">
+        <form id="f">
+          <div>
+            <h1>Welcome to Icebox! Your all-in-one CPPS launcher</h1>
+            <p>Enter the link to any CPPS to open it directly or save it for quick access.</p>
+          </div>
+          <div class="row">
+            <label>
+              URL
+              <input id="urlInput" type="url" inputmode="url" placeholder="enter link to cpps" autocomplete="url" spellcheck="false" />
+            </label>
+          </div>
+          <div class="row-compact">
+            <button class="white-blue-btn" type="button" id="saveBtn">Save</button>
+            <button class="white-blue-btn cpl-proceed" type="submit">Open</button>
+          </div>
+          <div class="error" id="err"></div>
+        </form>
+
+        <div>
+          <div class="section-title" id="pinnedTitle" style="display:none;">Pinned links</div>
+          <div id="pinnedGrid" class="grid"></div>
+          <div class="section-title">Saved links</div>
+          <div id="grid" class="grid"></div>
+          <div id="emptyState" class="muted">No saved links yet.</div>
+        </div>
+
+        <div id="moreRow" class="more" style="display:none;">
+          <select id="moreSelect" aria-label="More saved links"></select>
+          <button type="button" id="openMore">Open</button>
+          <button class="secondary" type="button" id="editMore">Edit</button>
+          <button class="secondary" type="button" id="pinMore">Pin</button>
+          <button class="secondary" type="button" id="deleteMore">Delete</button>
+        </div>
+      </div>
+    </div>
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal" hidden>
+      <div class="dialog">
+        <h2>Edit link</h2>
+        <form id="editForm">
+          <div class="grid2">
+            <label>
+              Name
+              <input id="eName" type="text" maxlength="60" />
+            </label>
+            <label>
+              URL
+              <input id="eUrl" type="url" inputmode="url" autocomplete="url" spellcheck="false" />
+            </label>
+          </div>
+          <div class="grid2" style="margin-top: 12px; grid-template-columns: 1fr;"></div>
+          <div class="link-preview" id="ePreview"></div>
+          <div class="actions">
+            <button class="secondary" type="button" id="cancelEdit">Cancel</button>
+            <button type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Save Modal (Name only) -->
+    <div id="saveModal" class="modal" hidden>
+      <div class="dialog">
+        <h2>Save link</h2>
+        <form id="saveForm">
+          <label>
+            Name
+            <input id="sName" type="text" maxlength="60" />
+          </label>
+          <div class="actions">
+            <button class="secondary" type="button" id="cancelSave">Cancel</button>
+            <button type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <script>
+      // Navbar dropdown helpers
+      (function(){
+        const qs = (s)=>document.querySelector(s);
+        const dds = ['#ddLinks','#ddView','#ddTools','#ddHelp'].map(qs).filter(Boolean);
+        function hideAll(){ dds.forEach(dd=>dd.classList.remove('visible')); }
+        function toggle(dd){ if (!dd) return; const v = dd.classList.contains('visible'); hideAll(); if (!v) dd.classList.add('visible'); }
+        document.addEventListener('click', (e)=>{
+          const ids = ['tbLinksBtn','tbViewBtn','tbToolsBtn','tbHelpBtn'];
+          if (ids.includes(e.target && e.target.id)) return;
+          hideAll();
+        });
+        const map = [ ['#tbLinksBtn','#ddLinks'], ['#tbViewBtn','#ddView'], ['#tbToolsBtn','#ddTools'], ['#tbHelpBtn','#ddHelp'] ];
+        map.forEach(([b,d])=>{ const btn = qs(b), dd = qs(d); if (btn && dd) btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggle(dd); }); });
+        // Populate menus
+        function ddItem(label, meta, onClick){ const el = document.createElement('div'); el.className='item'; el.innerHTML = `<div>${label}</div><div style="color:#9aa0ad;font-size:12px;">${meta||''}</div>`; el.addEventListener('click', (e)=>{ e.stopPropagation(); hideAll(); try{ onClick&&onClick(); }catch{} }); return el; }
+        function renderLinks(){
+          const dd = qs('#ddLinks'); if (!dd) return; dd.innerHTML='';
+          const list = (function(){ try{ const raw=localStorage.getItem('savedLinks'); const arr = raw?JSON.parse(raw):[]; return Array.isArray(arr)?arr:[]; }catch{return [];} })();
+          const pinned = list.filter(l=>!!l.pinned);
+          const rest = list.filter(l=>!l.pinned);
+          if (pinned.length){ const s=document.createElement('div'); s.className='section'; s.textContent='Pinned'; dd.appendChild(s); pinned.forEach(l=> dd.appendChild(ddItem(l.name||new URL(l.url).hostname.replace(/^www\\./,''),'', ()=>{ try{ openURL(l.url); }catch{} }))); }
+          if (rest.length){ const s2=document.createElement('div'); s2.className='section'; s2.textContent='Saved'; dd.appendChild(s2); rest.forEach(l=> dd.appendChild(ddItem(l.name||new URL(l.url).hostname.replace(/^www\\./,''),'', ()=>{ try{ openURL(l.url); }catch{} }))); }
+          if (!list.length){ dd.appendChild(ddItem('No saved links','', ()=>{})); }
+        }
+        function renderView(){ const dd=qs('#ddView'); if(!dd) return; dd.innerHTML=''; dd.appendChild(ddItem('Toggle Fullscreen','F11', ()=>{ try{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); }catch{} })); }
+        function renderTools(){ const dd=qs('#ddTools'); if(!dd) return; dd.innerHTML=''; dd.appendChild(ddItem('Settings…','Cmd+,', ()=>{ try{ window.location.href='settings.html'; }catch{} })); dd.appendChild(ddItem('Clear Saved Links','', ()=>{ try{ localStorage.removeItem('savedLinks'); }catch{} })); }
+        function renderHelp(){ const dd=qs('#ddHelp'); if(!dd) return; dd.innerHTML=''; dd.appendChild(ddItem('About Icebox','', ()=>{ alert('Icebox – CPPS launcher'); })); }
+        window.renderToolbarMenus = function(){ renderLinks(); renderView(); renderTools(); renderHelp(); };
+        // initial
+        window.renderToolbarMenus();
+      })();
+      const $ = (s) => document.querySelector(s);
+      // SVG icons (consistent across platforms)
+      const EDIT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>';
+      const TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+      const CLIP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-8.49 8.49a5.5 5.5 0 0 1-7.78-7.78l9.9-9.9a3.5 3.5 0 0 1 4.95 4.95l-9.9 9.9a1.5 1.5 0 1 1-2.12-2.12l8.49-8.49"/></svg>';
+      const urlInput = $('#urlInput');
+      let HOTKEYS = { openURL: (navigator.platform.includes('Mac') ? 'Command+O' : 'Ctrl+O'), saveLink: (navigator.platform.includes('Mac') ? 'Meta+S' : 'Control+S'), cancelModal: 'Escape' };
+      // Normalize to Electron-style names used in main
+      function normalizeAccel(acc) { return String(acc || '').replace('Meta','Command').replace('Control','Ctrl'); }
+      function matchesAccel(e, accel) {
+        try {
+          if (!accel) return false; accel = accel.trim();
+          const parts = accel.split('+');
+          const base = parts[parts.length-1].toLowerCase();
+          const needShift = parts.includes('Shift');
+          const needAlt = parts.includes('Alt');
+          const needCmd = parts.includes('Cmd') || parts.includes('Command') || parts.includes('CmdOrCtrl');
+          const needCtrl = parts.includes('Ctrl') || parts.includes('Control') || parts.includes('CmdOrCtrl');
+          if (needShift !== !!e.shiftKey) return false;
+          if (needAlt !== !!e.altKey) return false;
+          if (parts.includes('CmdOrCtrl')) { if (!(e.metaKey || e.ctrlKey)) return false; }
+          else {
+            if (needCmd !== !!e.metaKey) return false;
+            if (needCtrl !== !!e.ctrlKey) return false;
+          }
+          if (/^f\d{1,2}$/i.test(base)) return (e.key||'').toLowerCase() === base;
+          if (base === 'escape' || base === 'esc') return (e.key||'').toLowerCase() === 'escape';
+          return (e.key||'').toLowerCase() === base;
+        } catch { return false; }
+      }
+      function humanizeAccel(accel) {
+        if (!accel) return '';
+        const isMac = navigator.platform.includes('Mac');
+        return accel
+          .replace(/CmdOrCtrl/g, isMac ? 'Cmd' : 'Ctrl')
+          .replace(/Command/g,'Cmd')
+          .replace(/Control/g,'Ctrl')
+          .replace(/\bCtrl\b/g,'Ctrl')
+          .replace(/\bAlt\b/g,'Alt');
+      }
+      async function loadHotkeys() {
+        try {
+          const hk = await (window.api && window.api.getHotkeys ? window.api.getHotkeys() : null);
+          if (hk && typeof hk === 'object') {
+            HOTKEYS = { ...HOTKEYS, openURL: hk.openURL || HOTKEYS.openURL, saveLink: hk.saveLink || HOTKEYS.saveLink, cancelModal: hk.cancelModal || HOTKEYS.cancelModal };
+          }
+        } catch {}
+        try { const hint = document.getElementById('hotkeyHint'); if (hint && HOTKEYS.openURL) hint.textContent = `Press ${humanizeAccel(HOTKEYS.openURL)} to open the URL.`; } catch {}
+      }
+      loadHotkeys();
+      const saveBtn = $('#saveBtn');
+      const err = $('#err');
+      const grid = $('#grid');
+      const pinnedGrid = document.getElementById('pinnedGrid');
+      const pinnedTitle = document.getElementById('pinnedTitle');
+      const emptyState = $('#emptyState');
+      const moreRow = $('#moreRow');
+      const moreSelect = $('#moreSelect');
+      const openMoreBtn = $('#openMore');
+      const editMoreBtn = $('#editMore');
+      const pinMoreBtn = $('#pinMore');
+      // Save modal refs
+      const saveModal = document.getElementById('saveModal');
+      const saveForm = document.getElementById('saveForm');
+      const sName = document.getElementById('sName');
+      const cancelSave = document.getElementById('cancelSave');
+      const deleteMoreBtn = $('#deleteMore');
+      // No confirmation modal (delete is immediate)
+
+      // Edit modal refs
+      const editModal = $('#editModal');
+      const editForm = $('#editForm');
+      const eName = $('#eName');
+      const eUrl = $('#eUrl');
+      // removed eIconColor (auto-derived)
+      // background color is auto-derived; no edit input
+      const ePreview = $('#ePreview');
+
+      const DEFAULT_URL = '';
+
+      // Helpers
+      const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+      function normalize(href) {
+        const trimmed = (href || '').trim();
+        if (!trimmed) return '';
+        if (!/^https?:\/\//i.test(trimmed)) return 'https://' + trimmed;
+        return trimmed;
+      }
+      function titleize(s) {
+        return (s || '').split(/[^a-zA-Z0-9]+/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+      }
+      function deriveNameFromURL(href) {
+        try {
+          const u = new URL(href);
+          const host = u.hostname.replace(/^www\./, '');
+          const parts = host.split('.');
+          const core = parts.length > 2 ? parts[parts.length - 2] : parts[0];
+          return titleize(core);
+        } catch { return 'Link'; }
+      }
+      function hashString(str) {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i) | 0;
+        return Math.abs(h);
+      }
+      function hslToHex(h, s, l) {
+        s /= 100; l /= 100;
+        const k = n => (n + h / 30) % 12;
+        const a = s * Math.min(l, 1 - l);
+        const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+        const toHex = x => Math.round(255 * x).toString(16).padStart(2, '0');
+        return '#' + toHex(f(0)) + toHex(f(8)) + toHex(f(4));
+      }
+      function isLight(hex) {
+        try {
+          const c = hex.replace('#','');
+          const r = parseInt(c.substring(0,2),16);
+          const g = parseInt(c.substring(2,4),16);
+          const b = parseInt(c.substring(4,6),16);
+          // YIQ perceived brightness
+          return (r*299 + g*587 + b*114)/1000 > 150;
+        } catch { return false; }
+      }
+      function shadeColor(hex, percent) {
+        try {
+          const c = hex.replace('#','');
+          let r = parseInt(c.substring(0,2),16);
+          let g = parseInt(c.substring(2,4),16);
+          let b = parseInt(c.substring(4,6),16);
+          const p = percent/100;
+          r = Math.round(r + (p >= 0 ? (255 - r)*p : r*p));
+          g = Math.round(g + (p >= 0 ? (255 - g)*p : g*p));
+          b = Math.round(b + (p >= 0 ? (255 - b)*p : b*p));
+          const toHex = n => clamp(n,0,255).toString(16).padStart(2,'0');
+          return '#' + toHex(r) + toHex(g) + toHex(b);
+        } catch { return hex; }
+      }
+
+      // Dominant color extraction from favicon (best effort)
+      function dominantColorFromImage(img) {
+        try {
+          const W = 32, H = 32;
+          const canvas = document.createElement('canvas');
+          canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0,0,W,H);
+          ctx.drawImage(img, 0, 0, W, H);
+          let data;
+          try { data = ctx.getImageData(0,0,W,H).data; } catch (_) { return null; }
+          const map = new Map();
+          for (let i = 0; i < data.length; i += 4) {
+            const a = data[i+3]; if (a < 80) continue;
+            const r = data[i], g = data[i+1], b = data[i+2];
+            const max = Math.max(r,g,b), min = Math.min(r,g,b);
+            const sat = max - min;
+            const luma = 0.2126*r + 0.7152*g + 0.0722*b;
+            let weight = 1 + (sat/255)*1.5;
+            if (luma > 240 || luma < 15) weight *= 0.3;
+            const qr = r & 0xF8, qg = g & 0xF8, qb = b & 0xF8;
+            const key = `${qr}-${qg}-${qb}`;
+            map.set(key, (map.get(key) || 0) + weight);
+          }
+          if (!map.size) return null;
+          let bestKey = null, bestScore = -1;
+          for (const [k, v] of map) { if (v > bestScore) { bestScore = v; bestKey = k; } }
+          const [qr,qg,qb] = bestKey.split('-').map(n => parseInt(n,10));
+          return '#' + [qr,qg,qb].map(v => v.toString(16).padStart(2,'0')).join('');
+        } catch { return null; }
+      }
+
+      function updateLinkBgColor(id, hex) {
+        if (!/^#([0-9a-f]{6})$/i.test(hex || '')) return;
+        const links = getLinks();
+        const idx = links.findIndex(l => l.id === id);
+        if (idx < 0) return;
+        const link = links[idx];
+        if (link.bgColor === hex && link.bgColorSource === 'favicon') return;
+        link.bgColor = hex;
+        link.bgColorSource = 'favicon';
+        link.iconColor = isLight(hex) ? '#111111' : '#ffffff';
+        setLinks(links);
+        render();
+      }
+
+      // Background prefetch of favicon colors for all saved links
+      const _prefetchInProgress = new Set();
+      let _prefetchScheduled = false;
+      function tryLoadFavicon(srcs) {
+        return new Promise((resolve) => {
+          if (!srcs || !srcs.length) return resolve(null);
+          let i = 0;
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          const next = () => {
+            if (i >= srcs.length) return resolve(null);
+            img.onload = () => resolve(img);
+            img.onerror = () => { i++; next(); };
+            try { img.src = srcs[i]; } catch { i++; next(); }
+          };
+          next();
+        });
+      }
+      function prefetchOneColor(link) {
+        if (!link || !link.id || link.bgColorSource === 'favicon') return Promise.resolve();
+        if (_prefetchInProgress.has(link.id)) return Promise.resolve();
+        _prefetchInProgress.add(link.id);
+        const srcs = faviconSources(link.url);
+        return tryLoadFavicon(srcs).then((img) => {
+          if (!img) return;
+          const hex = dominantColorFromImage(img);
+          if (hex) updateLinkBgColor(link.id, hex);
+        }).finally(() => { _prefetchInProgress.delete(link.id); });
+      }
+      function prefetchAllColors(concurrency = 2) {
+        const targets = getLinks().filter(l => l && l.url && l.bgColorSource !== 'favicon');
+        if (!targets.length) return;
+        let idx = 0;
+        const run = () => {
+          if (idx >= targets.length) return;
+          const cur = targets[idx++];
+          prefetchOneColor(cur).finally(run);
+        };
+        const n = Math.min(concurrency, targets.length);
+        for (let i = 0; i < n; i++) run();
+      }
+      function schedulePrefetch() {
+        if (_prefetchScheduled) return; _prefetchScheduled = true;
+        const start = () => { _prefetchScheduled = false; prefetchAllColors(3); };
+        if (window.requestIdleCallback) window.requestIdleCallback(start, { timeout: 2000 });
+        else setTimeout(start, 300);
+      }
+
+      // Favicon helpers
+      function faviconSources(href) {
+        try {
+          const u = new URL(href);
+          const host = u.hostname;
+          return [
+            `https://icons.duckduckgo.com/ip3/${host}.ico`,
+            `${u.protocol}//${host}/favicon.ico`,
+            `https://www.google.com/s2/favicons?domain=${host}&sz=64`
+          ];
+        } catch { return []; }
+      }
+
+      // Storage
+      function getLinks() {
+        try {
+          const raw = localStorage.getItem('savedLinks');
+          const arr = raw ? JSON.parse(raw) : [];
+          // Migration: array of strings -> array of objects
+          let list = [];
+          if (Array.isArray(arr) && (arr.length === 0 || typeof arr[0] === 'string')) {
+            list = arr.map((u) => makeLink({ url: u }));
+          } else {
+            list = (Array.isArray(arr) ? arr : []).map((it) => makeLink(it));
+          }
+          // Ensure IDs
+          let changed = false;
+          list = list.map((it) => {
+            if (!it.id) { it.id = newId(); changed = true; }
+            return it;
+          });
+          // Ensure createdAt exists to support ordering (preserve relative order)
+          if (list.length) {
+            const now = Date.now();
+            for (let i = 0; i < list.length; i++) {
+              if (typeof list[i].createdAt !== 'number') { list[i].createdAt = now - (list.length - i); changed = true; }
+              // If currently pinned but missing pinnedAt, seed it from createdAt
+              if (list[i].pinned && typeof list[i].pinnedAt !== 'number') { list[i].pinnedAt = list[i].createdAt; changed = true; }
+            }
+          }
+          if (changed) setLinks(list);
+          return list;
+        } catch { return []; }
+      }
+      function setLinks(arr) {
+        try { localStorage.setItem('savedLinks', JSON.stringify(arr)); } catch {}
+      }
+
+      function getLinksSorted() {
+        const list = getLinks();
+        const pinned = list.filter(l => !!l.pinned);
+        const rest = list.filter(l => !l.pinned);
+        return pinned.concat(rest);
+      }
+
+      function newId() {
+        try {
+          const bytes = new Uint8Array(8);
+          crypto.getRandomValues(bytes);
+          return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+        } catch { return String(Date.now()) + Math.random().toString(16).slice(2); }
+      }
+
+      function makeLink({ id, name, url, icon, iconColor, bgColor, bgColorSource, createdAt, pinned, pinnedAt }) {
+        const safeUrl = normalize(url || '');
+        const finalUrl = (()=>{ try { return new URL(safeUrl).toString(); } catch { return ''; } })();
+        const n = (name || deriveNameFromURL(finalUrl));
+        const ic = icon && icon.trim() ? icon.trim() : '🌐';
+        const hue = hashString(finalUrl || n) % 360;
+        const bg = /^#([0-9a-f]{6})$/i.test(bgColor || '') ? bgColor : hslToHex(hue, 65, 45);
+        const ico = /^#([0-9a-f]{6})$/i.test(iconColor || '') ? iconColor : (isLight(bg) ? '#111111' : '#ffffff');
+        const src = bgColor && /^#([0-9a-f]{6})$/i.test(bgColor) ? (bgColorSource || 'custom') : (bgColorSource || 'auto');
+        const ts = typeof createdAt === 'number' ? createdAt : Date.now();
+        const pAt = typeof pinnedAt === 'number' ? pinnedAt : (pinned ? ts : undefined);
+        const out = { id: id || null, name: n, url: finalUrl, icon: ic, iconColor: ico, bgColor: bg, bgColorSource: src, createdAt: ts, pinned: !!pinned };
+        if (pAt) out.pinnedAt = pAt;
+        return out;
+      }
+
+      // Mutations
+      function saveLink(link) {
+        let cur;
+        let links = getLinks();
+        if (link && link.id) {
+          const existing = links.find(l => l.id === link.id) || {};
+          // Preserve existing properties (like icon) unless overridden
+          cur = makeLink({ ...existing, ...link, createdAt: existing.createdAt });
+        } else {
+          cur = makeLink({ ...link, createdAt: Date.now() });
+        }
+        if (!cur.url) return null;
+        links = getLinks();
+        if (cur.id) {
+          const i = links.findIndex(l => l.id === cur.id);
+          if (i >= 0) {
+            // preserve id
+            cur.id = links[i].id;
+            // preserve original createdAt
+            cur.createdAt = links[i].createdAt;
+            links[i] = cur;
+          } else {
+            // fall back to create
+            cur.id = cur.id || newId();
+            links.unshift(cur);
+          }
+        } else {
+          // create new, dedupe by url
+          links = links.filter(l => l.url !== cur.url);
+          cur.id = newId();
+          links.unshift(cur);
+        }
+        setLinks(links.slice(0, 100));
+        render();
+        return cur;
+      }
+
+      function togglePin(id) {
+        const links = getLinks();
+        const idx = links.findIndex(l => l.id === id);
+        if (idx < 0) return;
+        const item = links[idx];
+        item.pinned = !item.pinned;
+        if (item.pinned) { item.pinnedAt = Date.now(); }
+        // Move to the start of its segment
+        links.splice(idx, 1);
+        if (item.pinned) {
+          // place at front
+          links.unshift(item);
+        } else {
+          // place after last pinned
+          const lastPin = links.findLastIndex ? links.findLastIndex(l => l.pinned) : (links.length - 1 - [...links].reverse().findIndex(l => l.pinned));
+          const insertAt = lastPin >= 0 ? lastPin + 1 : 0;
+          links.splice(insertAt, 0, item);
+        }
+        setLinks(links);
+        render();
+      }
+
+      function reorderByDrop(dragId, targetId) {
+        if (!dragId || !targetId || dragId === targetId) return;
+        const sorted = getLinksSorted();
+        const dIdx = sorted.findIndex(l => l.id === dragId);
+        const tIdx = sorted.findIndex(l => l.id === targetId);
+        if (dIdx < 0 || tIdx < 0) return;
+        const drag = sorted[dIdx];
+        const target = sorted[tIdx];
+        // Remove dragged
+        sorted.splice(dIdx, 1);
+        let insertAt = tIdx;
+        if (dIdx < tIdx) insertAt--; // account for removal shift
+        if (drag.pinned && !target.pinned) {
+          // keep within pinned segment (end)
+          const newPinnedEnd = (() => { const i = sorted.findLastIndex ? sorted.findLastIndex(l => l.pinned) : (sorted.length - 1 - [...sorted].reverse().findIndex(l => l.pinned)); return i; })();
+          insertAt = Math.max(0, newPinnedEnd + 1); // insert after last pinned -> end of pinned segment
+          insertAt = Math.min(insertAt, sorted.length);
+        } else if (!drag.pinned && target.pinned) {
+          // insert at start of unpinned segment (after last pinned)
+          const newPinnedEnd = (() => { const i = sorted.findLastIndex ? sorted.findLastIndex(l => l.pinned) : (sorted.length - 1 - [...sorted].reverse().findIndex(l => l.pinned)); return i; })();
+          insertAt = newPinnedEnd + 1;
+        }
+        sorted.splice(insertAt, 0, drag);
+        setLinks(sorted);
+        render();
+      }
+
+      function deleteLink(id) {
+        const links = getLinks();
+        const idx = links.findIndex(l => l.id === id);
+        if (idx >= 0) {
+          links.splice(idx, 1);
+          setLinks(links);
+          render();
+        }
+      }
+
+      function openURL(href) {
+        const url = normalize(href);
+        try {
+          const u = new URL(url);
+          if (!/^https?:$/i.test(u.protocol)) throw new Error('Only http/https are allowed');
+          localStorage.setItem('lastURL', u.toString());
+          // Ask main process to open in content view below the overlay
+          if (window.api && window.api.openURL) window.api.openURL(u.toString());
+          else window.location.href = u.toString();
+        } catch {
+          err.textContent = 'Please enter a valid URL (http/https only).';
+          urlInput.focus();
+        }
+      }
+
+      // Rendering
+      function render() {
+        const all = getLinks();
+        const pinned = all.filter(l => !!l.pinned).sort((a,b) => (b.pinnedAt||b.createdAt||0) - (a.pinnedAt||a.createdAt||0));
+        const unpinned = all.filter(l => !l.pinned);
+        emptyState.style.display = all.length ? 'none' : '';
+
+        // Render pinned section
+        pinnedGrid.innerHTML = '';
+        pinnedTitle.style.display = pinned.length ? '' : 'none';
+        pinned.forEach((item) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.dataset.id = item.id || '';
+          const gradA = shadeColor(item.bgColor, -15);
+          const gradB = shadeColor(item.bgColor, 8);
+          const ink = document.createElement('div');
+          ink.className = 'ink';
+          ink.style.background = `linear-gradient(135deg, ${gradA}, ${gradB})`;
+          const chrome = document.createElement('div');
+          chrome.className = 'chrome';
+          const body = document.createElement('div');
+          body.className = 'card-body';
+          const icon = document.createElement('div');
+          icon.className = 'icon';
+          icon.style.color = item.iconColor;
+          const img = document.createElement('img');
+          img.crossOrigin = 'anonymous';
+          img.alt = `${item.name} favicon`;
+          const fallback = document.createElement('span');
+          fallback.className = 'fallback';
+          fallback.textContent = item.icon;
+          const srcs = faviconSources(item.url);
+          let si = 0;
+          const tryNext = () => { if (si < srcs.length) { img.src = srcs[si++]; } else { img.style.display = 'none'; fallback.style.display = 'block'; } };
+          img.addEventListener('error', tryNext);
+          img.addEventListener('load', () => {
+            img.style.display = 'block'; fallback.style.display = 'none';
+            if (item.bgColorSource !== 'favicon') {
+              const hex = dominantColorFromImage(img);
+              if (hex) { const gradA2 = shadeColor(hex, -15); const gradB2 = shadeColor(hex, 8); ink.style.background = `linear-gradient(135deg, ${gradA2}, ${gradB2})`; updateLinkBgColor(item.id, hex); }
+            }
+          });
+          tryNext();
+          icon.appendChild(img); icon.appendChild(fallback);
+          const texts = document.createElement('div'); texts.className = 'texts';
+          const nameEl = document.createElement('div'); nameEl.className = 'name'; nameEl.textContent = item.name;
+          const meta = document.createElement('div'); meta.className = 'meta';
+          try { meta.textContent = new URL(item.url).hostname.replace(/^www\./,''); } catch { meta.textContent = ''; }
+          texts.appendChild(nameEl); texts.appendChild(meta);
+          body.appendChild(icon); body.appendChild(texts);
+          const actions = document.createElement('div'); actions.className = 'card-actions';
+          const pinBtn = document.createElement('button'); pinBtn.type = 'button'; pinBtn.className = 'icon-btn pin-btn active'; pinBtn.title = 'Unpin'; pinBtn.setAttribute('aria-label','Unpin'); pinBtn.innerHTML = CLIP_SVG;
+          const editBtn = document.createElement('button'); editBtn.type = 'button'; editBtn.className = 'icon-btn edit-btn'; editBtn.title = 'Edit'; editBtn.setAttribute('aria-label','Edit'); editBtn.innerHTML = EDIT_SVG;
+          const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'icon-btn delete-btn'; delBtn.title = 'Delete'; delBtn.setAttribute('aria-label','Delete'); delBtn.innerHTML = TRASH_SVG;
+          actions.appendChild(pinBtn); actions.appendChild(editBtn); actions.appendChild(delBtn);
+          card.appendChild(ink); card.appendChild(chrome); card.appendChild(actions); card.appendChild(body);
+          card.addEventListener('click', () => openURL(item.url));
+          // Accent tint based on card color
+          card.addEventListener('mouseenter', () => { document.documentElement.style.setProperty('--accent', item.bgColor); document.documentElement.style.setProperty('--accent-strong', shadeColor(item.bgColor, -25)); });
+          card.addEventListener('mouseleave', () => { document.documentElement.style.setProperty('--accent', '#22a4f3'); document.documentElement.style.setProperty('--accent-strong', '#0154a3'); });
+          pinBtn.addEventListener('click', (ev) => { ev.stopPropagation(); togglePin(item.id); });
+          editBtn.addEventListener('click', (ev) => { ev.stopPropagation(); openEdit(item.id); });
+          delBtn.addEventListener('click', (ev) => { ev.stopPropagation(); doDelete(item.id); });
+          // DnD
+          card.setAttribute('draggable','true');
+          card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', item.id); e.dataTransfer.effectAllowed='move'; card.classList.add('dragging'); });
+          card.addEventListener('dragend', () => card.classList.remove('dragging'));
+          card.addEventListener('dragover', (e) => { e.preventDefault(); card.classList.add('drop-target'); });
+          card.addEventListener('dragleave', () => card.classList.remove('drop-target'));
+          card.addEventListener('drop', (e) => { e.preventDefault(); card.classList.remove('drop-target'); const dragId = e.dataTransfer.getData('text/plain'); reorderByDrop(dragId, item.id); });
+          pinnedGrid.appendChild(card);
+        });
+
+        // Render saved (non-pinned) section
+        const top = unpinned.slice(0, 5);
+        grid.innerHTML = '';
+        top.forEach((item) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.dataset.id = item.id || '';
+          const gradA = shadeColor(item.bgColor, -15);
+          const gradB = shadeColor(item.bgColor, 8);
+          const ink = document.createElement('div');
+          ink.className = 'ink';
+          ink.style.background = `linear-gradient(135deg, ${gradA}, ${gradB})`;
+          const chrome = document.createElement('div');
+          chrome.className = 'chrome';
+          const body = document.createElement('div');
+          body.className = 'card-body';
+          const icon = document.createElement('div');
+          icon.className = 'icon';
+          icon.style.color = item.iconColor;
+          const img = document.createElement('img');
+          img.crossOrigin = 'anonymous';
+          img.alt = `${item.name} favicon`;
+          const fallback = document.createElement('span');
+          fallback.className = 'fallback';
+          fallback.textContent = item.icon;
+          const srcs = faviconSources(item.url);
+          let si = 0;
+          const tryNext = () => {
+            if (si < srcs.length) { img.src = srcs[si++]; }
+            else { img.style.display = 'none'; fallback.style.display = 'block'; }
+          };
+          img.addEventListener('error', tryNext);
+          img.addEventListener('load', () => {
+            img.style.display = 'block';
+            fallback.style.display = 'none';
+            if (item.bgColorSource !== 'favicon') {
+              const hex = dominantColorFromImage(img);
+              if (hex) {
+                const gradA2 = shadeColor(hex, -15);
+                const gradB2 = shadeColor(hex, 8);
+                ink.style.background = `linear-gradient(135deg, ${gradA2}, ${gradB2})`;
+                updateLinkBgColor(item.id, hex);
+              }
+            }
+          });
+          tryNext();
+          icon.appendChild(img);
+          icon.appendChild(fallback);
+          const texts = document.createElement('div');
+          texts.className = 'texts';
+          const nameEl = document.createElement('div');
+          nameEl.className = 'name';
+          nameEl.textContent = item.name;
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          try { meta.textContent = new URL(item.url).hostname.replace(/^www\./,''); } catch { meta.textContent = ''; }
+          texts.appendChild(nameEl);
+          texts.appendChild(meta);
+          body.appendChild(icon);
+          body.appendChild(texts);
+          // actions
+          const actions = document.createElement('div');
+          actions.className = 'card-actions';
+          const pinBtn = document.createElement('button');
+          pinBtn.type = 'button';
+          pinBtn.className = 'icon-btn pin-btn';
+          pinBtn.title = item.pinned ? 'Unpin' : 'Pin';
+          pinBtn.setAttribute('aria-label', item.pinned ? 'Unpin' : 'Pin');
+          pinBtn.innerHTML = CLIP_SVG;
+          if (item.pinned) pinBtn.classList.add('active');
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'icon-btn edit-btn';
+          editBtn.title = 'Edit';
+          editBtn.setAttribute('aria-label', 'Edit');
+          editBtn.innerHTML = EDIT_SVG;
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'icon-btn delete-btn';
+          delBtn.title = 'Delete';
+          delBtn.setAttribute('aria-label', 'Delete');
+          delBtn.innerHTML = TRASH_SVG;
+          actions.appendChild(pinBtn);
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+          card.appendChild(ink);
+          card.appendChild(chrome);
+          card.appendChild(actions);
+          card.appendChild(body);
+          card.addEventListener('click', () => openURL(item.url));
+          card.addEventListener('mouseenter', () => { document.documentElement.style.setProperty('--accent', item.bgColor); document.documentElement.style.setProperty('--accent-strong', shadeColor(item.bgColor, -25)); });
+          card.addEventListener('mouseleave', () => { document.documentElement.style.setProperty('--accent', '#22a4f3'); document.documentElement.style.setProperty('--accent-strong', '#0154a3'); });
+          // Stop propagation for action buttons
+          pinBtn.addEventListener('click', (ev) => { ev.stopPropagation(); togglePin(item.id); });
+          editBtn.addEventListener('click', (ev) => { ev.stopPropagation(); openEdit(item.id); });
+          delBtn.addEventListener('click', (ev) => { ev.stopPropagation(); doDelete(item.id); });
+          // Drag & drop
+          card.setAttribute('draggable', 'true');
+          card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', item.id); e.dataTransfer.effectAllowed = 'move'; card.classList.add('dragging'); });
+          card.addEventListener('dragend', () => card.classList.remove('dragging'));
+          card.addEventListener('dragover', (e) => { e.preventDefault(); card.classList.add('drop-target'); });
+          card.addEventListener('dragleave', () => card.classList.remove('drop-target'));
+          card.addEventListener('drop', (e) => { e.preventDefault(); card.classList.remove('drop-target'); const dragId = e.dataTransfer.getData('text/plain'); reorderByDrop(dragId, item.id); });
+          grid.appendChild(card);
+        });
+
+        const rest = unpinned.slice(5);
+        if (rest.length) {
+          moreRow.style.display = '';
+          moreSelect.innerHTML = '';
+          rest.forEach((item) => {
+            const opt = document.createElement('option');
+            opt.value = item.id || '';
+            opt.textContent = item.name;
+            moreSelect.appendChild(opt);
+          });
+          const updateMoreButtons = () => {
+            const link = getLinks().find(l => l.id === moreSelect.value);
+            if (link) pinMoreBtn.textContent = link.pinned ? 'Unpin' : 'Pin';
+          };
+          moreSelect.addEventListener('change', updateMoreButtons);
+          updateMoreButtons();
+        } else {
+          moreRow.style.display = 'none';
+          moreSelect.innerHTML = '';
+        }
+        // After render, prefetch colors for remaining links in background
+        schedulePrefetch();
+        // refresh toolbar links menu
+        try { if (window.renderToolbarMenus) window.renderToolbarMenus(); } catch {}
+      }
+
+      // Bootstrap initial state (no default saved links)
+      const last = localStorage.getItem('lastURL');
+      urlInput.value = (last !== null ? last : '');
+      // Persist URL field as user types (keeps empty string too)
+      try {
+        urlInput.addEventListener('input', () => {
+          try { localStorage.setItem('lastURL', urlInput.value); } catch {}
+        });
+        window.addEventListener('beforeunload', () => {
+          try { localStorage.setItem('lastURL', urlInput.value); } catch {}
+        });
+      } catch {}
+      render();
+
+      // Autofill name from URL when name empty and URL changes
+      // URL change does not need to update a name field (handled in save popup)
+
+      // Form submit => open only (no auto-save)
+      $('#f').addEventListener('submit', (e) => {
+        e.preventDefault();
+        err.textContent = '';
+        try { new URL(urlInput.value); openURL(urlInput.value); }
+        catch { err.textContent = 'Please enter a valid URL.'; }
+      });
+
+      // Save Link button => open name popup then save
+      saveBtn.addEventListener('click', () => {
+        err.textContent = '';
+        const rawUrl = urlInput.value;
+        try {
+          const u = new URL(rawUrl);
+          // Start with a quick fallback, then try to fetch the real page title via main process
+          sName.value = deriveNameFromURL(u.toString());
+          try {
+            if (window.api && window.api.resolveTitle) {
+              const pending = sName.value;
+              sName.placeholder = 'Fetching site title…';
+              window.api.resolveTitle(u.toString()).then((title) => {
+                if (title && !saveModal.hidden) sName.value = title;
+                else if (!title) sName.value = pending;
+              }).catch(() => {});
+            }
+          } catch {}
+          saveModal.hidden = false;
+        } catch {
+          err.textContent = 'Please enter a valid URL.';
+        }
+      });
+
+      cancelSave.addEventListener('click', () => { saveModal.hidden = true; });
+
+      // Confirm save from popup
+      saveForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        err.textContent = '';
+        const saved = saveLink({ name: sName.value, url: urlInput.value });
+        if (saved) {
+          saveModal.hidden = true;
+        } else {
+          err.textContent = 'Please enter a valid URL.';
+        }
+      });
+
+      // Prevent Enter submit unless Enter is the configured Open hotkey
+      try {
+        urlInput.addEventListener('keydown', (e) => {
+          if ((e.key || '').toLowerCase() === 'enter' && !matchesAccel(e, 'Enter') && normalizeAccel(HOTKEYS.openURL) !== 'Enter') { e.preventDefault(); }
+        });
+      } catch {}
+
+      // Hotkeys (work even when inputs are focused)
+      document.addEventListener('keydown', (e) => {
+        const k = e.key || '';
+        // In Save modal: Enter/Cmd+S save, Escape cancels
+        if (!saveModal.hidden) {
+          if (k === 'Escape') { e.preventDefault(); saveModal.hidden = true; return; }
+          if (k === 'Enter' || (k.toLowerCase && k.toLowerCase() === 's' && e.metaKey)) {
+            e.preventDefault();
+            try { saveForm.requestSubmit(); } catch { saveForm.dispatchEvent(new Event('submit')); }
+            return;
+          }
+          return;
+        }
+        // Main menu
+        if (matchesAccel(e, normalizeAccel(HOTKEYS.saveLink))) {
+          e.preventDefault(); saveBtn.click(); return;
+        }
+        // Hotkey to Open current URL
+        if (matchesAccel(e, normalizeAccel(HOTKEYS.openURL))) {
+          e.preventDefault();
+          try { document.getElementById('f').requestSubmit(); } catch { document.getElementById('f').dispatchEvent(new Event('submit')); }
+          return;
+        }
+      });
+
+      // Open from dropdown (id -> url)
+      openMoreBtn.addEventListener('click', () => {
+        const id = moreSelect.value;
+        const link = getLinks().find(l => l.id === id);
+        if (link && link.url) openURL(link.url);
+      });
+
+      // Edit/Delete for dropdown selection
+      editMoreBtn.addEventListener('click', () => {
+        const id = moreSelect.value; if (id) openEdit(id);
+      });
+      deleteMoreBtn.addEventListener('click', () => {
+        const id = moreSelect.value; if (id) deleteLink(id);
+      });
+
+      pinMoreBtn.addEventListener('click', () => {
+        const id = moreSelect.value; if (id) togglePin(id);
+      });
+
+      // Edit modal logic
+      function openEdit(id) {
+        const link = getLinks().find(l => l.id === id);
+        if (!link) return;
+        editModal.dataset.id = id;
+        eName.value = link.name || '';
+        eUrl.value = link.url || '';
+        ePreview.textContent = link.name + ' – ' + (new URL(link.url).hostname.replace(/^www\./,''));
+        editModal.hidden = false;
+      }
+      function closeEdit() { editModal.hidden = true; }
+
+      $('#cancelEdit').addEventListener('click', () => closeEdit());
+      editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = editModal.dataset.id;
+        const saved = saveLink({ id, name: eName.value, url: eUrl.value });
+        if (saved) closeEdit();
+      });
+
+      // Delete immediately (no confirmation)
+      function doDelete(id) { if (id) deleteLink(id); }
+    </script>
+  </body>
+  </html>

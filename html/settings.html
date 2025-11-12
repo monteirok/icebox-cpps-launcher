@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Settings</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0f; --glass-bg: rgba(18,20,28,.55); --glass-border: rgba(255,255,255,.10); --glass-outline: rgba(255,255,255,.05); --glass-highlight: rgba(255,255,255,.06); --focus:#3b82f6; }
+      html, body {
+        height: 100%; margin: 0;
+        /* Match prompt.html background styling */
+        background-color: var(--bg);
+        background-image: url('../assets/images/bg.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        color: #fff;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+      .wrap { min-height: 100%; display: grid; place-items: center; padding: 24px; }
+      .panel { width: min(720px, 100%); background: var(--glass-bg); border: 1px solid var(--glass-border); outline: 1px solid var(--glass-outline); border-radius: 16px; padding: 18px; box-shadow: 0 18px 50px rgba(0,0,0,.5), inset 0 1px 0 var(--glass-highlight); }
+      h1 { margin: 0 0 12px; font-size: 18px; }
+      p { margin: 0 0 16px; color: #a3a3ad; font-size: 13px; }
+      .grid { display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; align-items: center; }
+      label { color: #cfd1db; font-size: 13px; }
+      .kbd { min-width: 220px; height: 36px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(18,20,28,.72); color: #fff; padding: 0 10px; display: grid; align-items: center; box-shadow: inset 0 1px 0 var(--glass-highlight); }
+      .row { display: contents; }
+      .actions { margin-top: 14px; display: grid; grid-auto-flow: column; gap: 10px; justify-content: end; }
+      button { padding: 10px 14px; border: 0; border-radius: 10px; font-weight: 700; cursor: pointer; }
+      .primary { background: linear-gradient(180deg, #3b82f6, #2563eb); color: #fff; }
+      .secondary { background: #2b2f3a; color: #fff; }
+      .muted { color: #9aa0ad; font-size: 12px; margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="panel">
+        <h1>Settings</h1>
+        <p>Customize your hotkeys. Click in a field and press the shortcut you want to use.</p>
+        <div class="grid" id="grid">
+          <div class="row"><label for="hk-openurl">Open URL (main menu)</label><div class="kbd" id="hk-openurl" tabindex="0"></div></div>
+          <div class="row"><label for="hk-savelink">Save link</label><div class="kbd" id="hk-savelink" tabindex="0"></div></div>
+          <div class="row"><label for="hk-cancel">Cancel dialog</label><div class="kbd" id="hk-cancel" tabindex="0"></div></div>
+          <div class="row"><label for="hk-openmenu">Open Saved Links (global)</label><div class="kbd" id="hk-openmenu" tabindex="0"></div></div>
+          <div class="row"><label for="hk-devtools">Toggle DevTools</label><div class="kbd" id="hk-devtools" tabindex="0"></div></div>
+          <div class="row"><label for="hk-fullscreen">Toggle Fullscreen</label><div class="kbd" id="hk-fullscreen" tabindex="0"></div></div>
+        </div>
+        <div class="actions">
+          <button class="secondary" id="back">Back</button>
+          <button class="secondary" id="reset">Reset</button>
+          <button class="primary" id="save">Save</button>
+        </div>
+        <div class="muted" id="note"></div>
+      </div>
+    </div>
+    <script>
+      const $ = (s) => document.querySelector(s);
+      const fields = {
+        openURL: $('#hk-openurl'),
+        saveLink: $('#hk-savelink'),
+        cancelModal: $('#hk-cancel'),
+        openMenu: $('#hk-openmenu'),
+        toggleDevTools: $('#hk-devtools'),
+        toggleFullscreen: $('#hk-fullscreen')
+      };
+      const defaults = {
+        openURL: 'CmdOrCtrl+O',
+        saveLink: 'CmdOrCtrl+S',
+        cancelModal: 'Escape',
+        openMenu: 'Escape',
+        toggleDevTools: (navigator.platform.includes('Mac') ? 'Alt+Command+I' : 'Ctrl+Shift+I'),
+        toggleFullscreen: 'F11'
+      };
+      let map = { ...defaults };
+
+      function accelFromEvent(e) {
+        const parts = [];
+        if (e.metaKey) parts.push('Command');
+        if (e.ctrlKey) parts.push('Ctrl');
+        if (e.altKey) parts.push('Alt');
+        if (e.shiftKey) parts.push('Shift');
+        const k = (e.key || '').length === 1 ? e.key.toUpperCase() : e.key;
+        // Normalize Escape case, Fn keys and words
+        let base = k;
+        if (/^f\d{1,2}$/i.test(k)) base = k.toUpperCase();
+        if (/^escape$/i.test(k)) base = 'Escape';
+        return [...parts, base].join('+') || '';
+      }
+      function setField(el, value) { el.textContent = value || ''; el.dataset.value = value || ''; }
+      function bindCapture(el) {
+        el.addEventListener('focus', () => { el.textContent = 'Press keys…'; });
+        el.addEventListener('keydown', (e) => {
+          e.preventDefault();
+          const a = accelFromEvent(e);
+          setField(el, a);
+        });
+      }
+      Object.values(fields).forEach(bindCapture);
+
+      async function load() {
+        try { const hk = await (window.api && window.api.getHotkeys ? window.api.getHotkeys() : null); if (hk) map = { ...defaults, ...hk }; } catch {}
+        setField(fields.openURL, map.openURL);
+        setField(fields.saveLink, map.saveLink);
+        setField(fields.cancelModal, map.cancelModal);
+        setField(fields.openMenu, map.openMenu);
+        setField(fields.toggleDevTools, map.toggleDevTools);
+        setField(fields.toggleFullscreen, map.toggleFullscreen);
+      }
+      load();
+
+      $('#save').addEventListener('click', async () => {
+        const newMap = {
+          openURL: fields.openURL.dataset.value || defaults.openURL,
+          saveLink: fields.saveLink.dataset.value || defaults.saveLink,
+          cancelModal: fields.cancelModal.dataset.value || defaults.cancelModal,
+          openMenu: fields.openMenu.dataset.value || defaults.openMenu,
+          toggleDevTools: fields.toggleDevTools.dataset.value || defaults.toggleDevTools,
+          toggleFullscreen: fields.toggleFullscreen.dataset.value || defaults.toggleFullscreen
+        };
+        try { await window.api.saveHotkeys(newMap); $('#note').textContent = 'Saved. Changes take effect immediately.'; } catch { $('#note').textContent = 'Failed to save.'; }
+      });
+      $('#reset').addEventListener('click', async () => {
+        try { await window.api.resetHotkeys(); map = { ...defaults }; await load(); $('#note').textContent = 'Reset to defaults.'; } catch {}
+      });
+      $('#back').addEventListener('click', () => { window.location.href = 'prompt.html'; });
+    </script>
+  </body>
+  </html>
